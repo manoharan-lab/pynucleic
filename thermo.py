@@ -66,7 +66,7 @@ def distance_map(seq1, seq2):
     """
     seqmatcher = difflib.SequenceMatcher(None, str(seq1), str(seq2),
                                          autojunk=False)
-    
+
 
 class Duplex:
     """
@@ -75,10 +75,10 @@ class Duplex:
     dangling ends are allowed.
     """
     def __init__(self, strand1, strand2=None, align=(0,0)):
-        """ 
+        """
         Constructs a duplex from two strands.  The duplex contains
         only the subsequences of the two strands that are specified by
-        the 'align' parameter. 
+        the 'align' parameter.
 
         Parameters
         ----------
@@ -86,7 +86,7 @@ class Duplex:
             First strand
         strand2 : Biopython Seq object or string, optional
             Second strand.  If not specified, the reverse
-            complement is used.  
+            complement is used.
         align : tuple of int, optional
             Specifies the beginning and end position of the duplex.
             First number is the position on strand 1 where the duplex
@@ -136,9 +136,9 @@ class Duplex:
         (stacked) form
         """
         duplex_string = "5' {} 3'\n3' {} 5'".format(self.seq,
-                                                    self.cseq[::-1]) 
+                                                    self.cseq[::-1])
         return duplex_string
-        
+
     def is_self_complementary(self):
         """
         Method to check whether a duplex contains self-complementary
@@ -146,10 +146,10 @@ class Duplex:
         """
         if str(self.seq) == str(self.cseq):
             return True
-        else: 
+        else:
             return False
 
-        
+
 class NNModel:
     """
     Defines common interface and shared code for all variants of the
@@ -175,10 +175,10 @@ class NNModel:
         thermodynamic calculations based on nearest-neighbor model.
         """
         pass
-    
+
     def melting_temp(self, duplex, c=1e-4, saltc=None):
         """
-        Returns melting point of duplex in K.  
+        Returns melting point of duplex in K.
 
         Parameters
         ----------
@@ -201,8 +201,8 @@ class NNModel:
             sym = 4
         dH, dS, dG = self.calc_thermo(duplex, saltc=saltc)
         return dH/(self.R*np.log(c/sym) + dS)
-        
-        
+
+
 class DNAModel(NNModel):
     def __init__(self):
         NNModel.__init__(self)
@@ -269,8 +269,8 @@ class DNAModel(NNModel):
                            'TA':-0.48, 'TC':-0.19, 'TG':-0.50, 'TT':-0.29}
 
         self.dangle3_ds = {k:((self.dangle3_dh[k] - self.dangle3_dg[k]) /
-                               self.Tref) for k in self.pairs} 
-        
+                               self.Tref) for k in self.pairs}
+
     def calc_thermo(self, duplex, T=37+273.15, saltc=None):
         """Calculate thermodynamic parameters of a DNA duplex
 
@@ -301,7 +301,7 @@ class DNAModel(NNModel):
 
         cseq, if specified, is used only to determine dangling-end
         corrections.  The function does *not* check if it is actually
-        complementary. 
+        complementary.
 
         .. [1] SantaLucia and Hicks, Annu. Rev. Biophys. Biomol. Struct.
            2004.
@@ -312,41 +312,41 @@ class DNAModel(NNModel):
         1) 'GTCTACC' -- a basic sequence
 
         >>> dH, dS, dG = dmodel.calc_thermo(Duplex('GTCTACC'))
-        >>> print dH, dS
+        >>> print("{:.1f} {:.4f}".format(dH, dS))
         -47.8 -0.1349
 
         2) 'GTCTACCA' -- a sequence with 1 end correction
 
         >>> dH, dS, dG = dmodel.calc_thermo(Duplex('GTCTACCA'))
-        >>> print dH, dS
+        >>> print("{:.1f} {:.4f}".format(dH, dS))
         -54.1 -0.1507
 
         3) 'GTCTAGAC' -- a self-complementary sequence
 
         >>> dH, dS, dG = dmodel.calc_thermo(Duplex('GTCTAGAC'))
-        >>> print dH, dS
+        >>> print("{:.1f} {:.4f}".format(dH, dS))
         -55.8 -0.1596
-        
+
         4) 'TGTCTAGACA' -- a self-complementary sequence with 2 end
         corrections
 
         >>> dH, dS, dG = dmodel.calc_thermo(Duplex('TGTCTAGACA'))
-        >>> print dH, dS
+        >>> print("{:.1f} {:.4f}".format(dH, dS))
         -68.4 -0.1912
 
         5) 'GTCTACC' with salt correction to 0.5 M
 
         >>> dH, dS, dG = dmodel.calc_thermo(Duplex('GTCTACC'), saltc=0.5)
-        >>> print "{:.1f} {:.4f} {:.2f}".format(dH, dS, dG)
+        >>> print("{:.1f} {:.4f} {:.2f}".format(dH, dS, dG))
         -47.8 -0.1364 -5.49
-        
+
         """
         dH = dS = dG37 = 0
         s = duplex.seq
         cs = duplex.cseq
         # apply dangling end corrections first
         if str(s) != str(cs.reverse_complement()):
-            print duplex
+            print(duplex)
             if duplex.seq.startswith('-'):
                 # add a 3' dangling end correction
                 pair = str(cs[-2:])
@@ -376,8 +376,8 @@ class DNAModel(NNModel):
                 # trim sequence to avoid overcounting pairs
                 s = s[1:]
             new_duplex = Duplex(s, cs)
-            print new_duplex
-        
+            print(new_duplex)
+
         # use dictionary comprehension to count total number of each NN pair
         nncounts = {pair:_count_overlapping(pair, str(s)) for pair
                     in self.pairs}
@@ -385,12 +385,12 @@ class DNAModel(NNModel):
         dH += sum(nncounts[pair]*self.dh[pair] for pair in self.pairs)
         dS += sum(nncounts[pair]*self.ds[pair] for pair in self.pairs)
         dG37 += sum(nncounts[pair]*self.dg[pair] for pair in self.pairs)
-        
+
         # apply symmetry correction if sequence is self-complementary
         if str(s) == str(s.reverse_complement()):
-            dS += self.sym_ds 
+            dS += self.sym_ds
             dG37 += self.sym_dg
-    
+
         # apply end corrections
         if (s.startswith('A') or s.startswith('T')):
             dH += self.end_dh
@@ -406,7 +406,7 @@ class DNAModel(NNModel):
         dH += self.init_dh
         dS += self.init_ds
         dG37 += self.init_dg
-                
+
         # apply salt correction
         # this implicitly assumes there is no 5' terminal phosphate, as is
         # usually the case for synthetic oligonucleotides
@@ -450,7 +450,7 @@ class RDNAModel(NNModel):
         self.init_ds = -3.9
         self.init_dg = 3.1
 
-        
+
     def calc_thermo(self, duplex, T=37+273.15, saltc=None):
         """Calculate thermodynamic parameters of a DNA-RNA duplex
 
@@ -481,29 +481,29 @@ class RDNAModel(NNModel):
 
         cseq, if specified, is used only to determine dangling-end
         corrections.  The function does *not* check if it is actually
-        complementary. 
+        complementary.
 
-        .. [1] Sugimoto et al., Biochemistry 34: 11211, 1995. 
+        .. [1] Sugimoto et al., Biochemistry 34: 11211, 1995.
 
         Examples
         --------
         In the example below, rdmodel=RDNAModel()
-        1) 'AGCGTAAG' -- example from p. 11214 of Sugimoto et al. [1]_ 
+        1) 'AGCGTAAG' -- example from p. 11214 of Sugimoto et al. [1]_
 
         >>> dH, dS, dG = rdmodel.calc_thermo(Duplex('AGCGTAAG'))
-        >>> print "{:.1f}".format(dG)
+        >>> print("{:.1f}".format(dG))
         -6.0
 
-        2) 'AAGCGTAG' -- example from p. 11214 of Sugimoto et al. [1]_ 
+        2) 'AAGCGTAG' -- example from p. 11214 of Sugimoto et al. [1]_
 
         >>> dH, dS, dG = rdmodel.calc_thermo(Duplex('AAGCGTAG'))
-        >>> print "{:.1f}".format(dG)
+        >>> print("{:.1f}".format(dG))
         -6.0
 
         """
         dH = dS = dG37 = 0
         s = duplex.seq
-        
+
         # use dictionary comprehension to count total number of each NN pair
         nncounts = {pair:_count_overlapping(pair, str(s)) for pair
                     in self.pairs}
@@ -511,7 +511,7 @@ class RDNAModel(NNModel):
         dH += sum(nncounts[pair]*self.dh[pair] for pair in self.pairs)
         dS += sum(nncounts[pair]*self.ds[pair] for pair in self.pairs)
         dG37 += sum(nncounts[pair]*self.dg[pair] for pair in self.pairs)
-        
+
         # apply initiation correction
         dH += self.init_dh
         dS += self.init_ds
@@ -522,8 +522,9 @@ class RDNAModel(NNModel):
 
         return dH, dS/1000, dG
 
-        
-# run doctests
+
+# run doctests if invoked directly as "python thermo.py". This will throw an
+# error if any of the outputs do not match what is written in the docstrings.
 if __name__ == "__main__":
     import doctest
     doctest.testmod(extraglobs={'dmodel': DNAModel(), 'rdmodel': RDNAModel()})
